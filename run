@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+
+# Trap CTRL-C to avoid background processes running
+trap ctrl_c INT
+ctrl_c() {
+  # Clean the system
+  kill -9 "$(pgrep 'sima')" >/dev/null 2>&1
+  kill -9 "$(pgrep 't_graph')" >/dev/null 2>&1
+  sync
+  exit -2
+}
+kill -9 "$(pgrep 'sima')" >/dev/null 2>&1
+kill -9 "$(pgrep 't_graph')" >/dev/null 2>&1
+
+# Init vars
+HOST="localhost"
+# HARDCODED to reduce RAM impact all data is passed by pointers
+NLP=1
+SLP=1
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+  key="$1"
+
+  case $key in
+  -n | --nodes)
+    TOT_SMH="$2"
+    shift # past argument
+    shift # past value
+    ;;
+  -a | --algorithm)
+    ALG="$2"
+    shift # past argument
+    shift # past value
+    ;;
+ 
+  -p | --prob)
+    PROB="$2"
+    shift # past argument
+    shift # past value
+    ;;
+#  -t | --test)
+#    TEST="$2"
+#    shift # past argument
+#    shift # past value
+#    ;;
+  -d | --debug)
+    DEBUG="$2"
+    echo "Debug value $DEBUG"
+    shift
+    shift
+    ;;
+  *) # unknown option
+    POSITIONAL+=("$1") # save it in an array for later
+    shift              # past argument
+    ;;
+  esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+if [[ -n $1 || -z ${TOT_SMH} ]]; then
+  echo "Illegal number of parameters"
+  echo "USAGE: ./run --nodes|-n #SMH [--debug|-d DEBUGCMD]"
+  echo -e "\\t#SMH\\ttotal number of nodes to simulate"
+  echo -e "\\t[DEBUGCMD] used for injecting *trace commands (optional)"
+  exit -1
+fi
+
+rm ./*.finished
+
+source ./scripts_configuration.sh
+cp ${CORPUS_DIRECTORY}/test-graph-cleaned-1.dot ${TRACE_DIRECTORY}/test-graph-cleaned.dot
+make clean
+make
+
+# Set sim parameters
+export MIGRATION=0
+export MFACTOR=1.2
+export LOAD=0
+export MAX_TTL=20 # DEFAULT=16
+export DISSEMINATION=$ALG                           # 0 = BROADCAST, 7 = DDF2, DANDELIONPLUS = 6, DANDELION = 8, FP = 1, DANDELION++ = 5
+export BROADCAST_PROB_THRESHOLD=$PROB
+export FIXED_PROB_THRESHOLD=$PROB
+export DANDELION_STEPS_STEM_PHASE=$PROB
+export PROBABILITY_FUNCTION=1
+export FUNCTION_COEFFICIENT=$PROB #"$FUNC_COEFF_HIGHER.$FUNC_COEFF_LOWER"
+export END_CLOCK=200000 #200000 #5000 
+export ACTIVE_PERC=80
+
+
+# Partitioning the #SMH among the available LPs
+SMH=$((TOT_SMH / NLP))
+
+###########################################################################################
+
+###########################################################################################
+# RUN TEST 51%: 100 runs of increasing attacker's hashrate
+###########################################################################################
+
+# Normal Run
+if [[ -z "$TEST" ]]; then
+  # SImulation MAnager (SIMA) execution
+  echo "Start time: $(date)"
+  if [ $HOST == "$HOSTNAME" ] || [ $HOST == "localhost" ]; then
+    echo "Starting SIMA (waiting for $NLP LPs)..."
+    ./sima "$NLP" &
+  fi
+  $DEBUG ./t_graph "$NLP" $SMH ${TRACE_DIRECTORY}/test_btc_ > "test_$ALG.$PROB.txt"
+  echo "End time: $(date)"
+  exit -1
+fi
+
+
+: <<'END'
+END
