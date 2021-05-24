@@ -27,22 +27,6 @@ while [[ $# -gt 0 ]]; do
     shift # past argument
     shift # past value
     ;;
-  -a | --algorithm)
-    ALG="$2"
-    shift # past argument
-    shift # past value
-    ;;
- 
-  -p | --prob)
-    PROB="$2"
-    shift # past argument
-    shift # past value
-    ;;
-#  -t | --test)
-#    TEST="$2"
-#    shift # past argument
-#    shift # past value
-#    ;;
   -d | --debug)
     DEBUG="$2"
     echo "Debug value $DEBUG"
@@ -77,13 +61,13 @@ export MIGRATION=0
 export MFACTOR=1.2
 export LOAD=0
 export MAX_TTL=20 # DEFAULT=16
-export DISSEMINATION=$ALG                           # 0 = BROADCAST, 7 = DDF2, DANDELIONPLUS = 6, DANDELION = 8, FP = 1, DANDELION++ = 5
-export BROADCAST_PROB_THRESHOLD=$PROB
-export FIXED_PROB_THRESHOLD=$PROB
-export DANDELION_STEPS_STEM_PHASE=$PROB
+export DISSEMINATION=0                         # 0 = BROADCAST, 7 = DDF2, DANDELIONPLUS = 6, DANDELION = 8, FIXED PROBABILITY = 1, DANDELION++ = 5
+export BROADCAST_PROB_THRESHOLD=70
+export FIXED_PROB_THRESHOLD=70
+export DANDELION_STEPS_STEM_PHASE=5
 export PROBABILITY_FUNCTION=1
-export FUNCTION_COEFFICIENT=$PROB #"$FUNC_COEFF_HIGHER.$FUNC_COEFF_LOWER"
-export END_CLOCK=200000 #200000 #5000 
+export FUNCTION_COEFFICIENT=2
+export END_CLOCK=200000 
 export ACTIVE_PERC=80
 
 
